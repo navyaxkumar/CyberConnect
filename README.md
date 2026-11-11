@@ -124,7 +124,7 @@ npm install
 npm run dev
 ```
 
-Health check (planned):
+Health check :
 
 ```text
 GET /api/health
