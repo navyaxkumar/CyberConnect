@@ -10,4 +10,4 @@ export default function ProtectedRoute() {
   if (loading) return <Loader />;
   if (!user) return <Navigate to="/login" replace state={{ from: location }} />;
   return <Outlet />;
-}v
+}
