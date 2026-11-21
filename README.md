@@ -4,7 +4,7 @@ CyberConnect is a cybersecurity blogging and community platform that brings toge
 
 ## Project Status
 
-Development is planned around a modular full-stack architecture and has not yet been completed. The initial scope covers user authentication, article publishing, Markdown editing, image uploads, community interactions, content discovery, and administrative moderation.
+Development is planned around a modular Full-Stack architecture and has not yet been completed. The initial scope covers user authentication, article publishing, Markdown editing, image uploads, community interactions, content discovery, and administrative moderation.
 
 Secure authentication, role-based authorization, content management, and database-backed community features will be implemented progressively across the phases listed under Development Scope.
 
