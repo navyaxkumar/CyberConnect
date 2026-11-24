@@ -23,7 +23,11 @@ export function validateRegister({ username, email, password }) {
 
 export function validateLogin({ email, password }) {
   const errors = {};
-  if (!email.trim()) errors.email = "Email is required";
+  if (!email.trim()) {
+    errors.email = "Email is required";
+  } else if (!EMAIL.test(email.trim())) {
+    errors.email = "Enter a valid email address";
+  }
   if (!password) errors.password = "Password is required";
   return errors;
 }
