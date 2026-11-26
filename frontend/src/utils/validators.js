@@ -31,3 +31,17 @@ export function validateLogin({ email, password }) {
   if (!password) errors.password = "Password is required";
   return errors;
 }
+
+export function validateProfile({ username, bio }) {
+  const errors = {};
+  const name = username.trim();
+
+  if (name.length < 3 || name.length > 30) {
+    errors.username = "Username must be 3-30 characters";
+  } else if (!USERNAME.test(name)) {
+    errors.username = "Username may only contain letters, numbers and underscores";
+  }
+
+  if (bio.length > 300) errors.bio = "Bio must be 300 characters or fewer";
+  return errors;
+}
