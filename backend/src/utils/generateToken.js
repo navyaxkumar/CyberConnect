@@ -8,6 +8,7 @@ const baseCookieOptions = () => ({
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
   sameSite: "lax",
+  path: "/",
 });
 
 export const signToken = (userId) =>

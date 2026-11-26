@@ -1,22 +1,21 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import { COOKIE_NAME } from "../utils/generateToken.js";
-
-const unauthorized = (res) => res.status(401).json({ message: "Not authenticated" });
+import { AppError } from "./appError.js";
 
 export const protect = async (req, res, next) => {
   const token = req.cookies?.[COOKIE_NAME];
-  if (!token) return unauthorized(res);
+  if (!token) return next(new AppError("Not authenticated", 401));
 
   let payload;
   try {
     payload = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ["HS256"] });
   } catch {
-    return unauthorized(res);
+    return next(new AppError("Not authenticated", 401));
   }
 
   const user = await User.findById(payload.id);
-  if (!user) return unauthorized(res);
+  if (!user) return next(new AppError("Not authenticated", 401));
 
   req.user = user;
   next();
