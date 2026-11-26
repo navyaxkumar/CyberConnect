@@ -40,6 +40,7 @@ import Home from "./pages/Home.jsx";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import Profile from "./pages/Profile.jsx";
+import PublicProfile from "./pages/PublicProfile.jsx";
 import NotFound from "./pages/NotFound.jsx";
 
 export default function App() {
@@ -54,6 +55,7 @@ export default function App() {
 
       <Route element={<MainLayout />}>
         <Route path="/" element={<Home />} />
+        <Route path="/users/:username" element={<PublicProfile />} />
 
         <Route element={<ProtectedRoute />}>
           <Route path="/profile" element={<Profile />} />
