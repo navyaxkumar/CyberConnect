@@ -1,1 +1,32 @@
 @import "tailwindcss";
+@theme {
+  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --color-brand: #1677ff;
+  --color-brand-light: #3b8cff;
+  --color-brand-dark: #0b3bd0;
+}
+
+.auth-wave {
+  background-color: #0b3bd0;
+  background-image:
+    radial-gradient(60% 50% at 20% 30%, #1d5bff 0%, transparent 70%),
+    radial-gradient(70% 60% at 85% 80%, #0a2a9c 0%, transparent 70%),
+    radial-gradient(50% 40% at 70% 15%, #1648e8 0%, transparent 70%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .login-card {
+    animation: login-card-enter 500ms ease-out both;
+  }
+}
+
+@keyframes login-card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
