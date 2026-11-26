@@ -20,6 +20,16 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true, minlength: 8, select: false },
     role: { type: String, enum: ROLES, default: "user" },
     bio: { type: String, maxlength: 300, default: "" },
+    profilePictureUrl: {
+      type: String,
+      default: null,
+      trim: true,
+      maxlength: 2048,
+      validate: {
+        validator: (value) => value == null || /^https?:\/\//i.test(value),
+        message: "Profile picture URL must use HTTP or HTTPS",
+      },
+    },
   },
   { timestamps: true }
 );

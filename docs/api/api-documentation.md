@@ -44,6 +44,7 @@ All example paths below are relative to the base URL. For example, `POST /auth/l
   - Lifetime: 7 days (`JWT_EXPIRES_DAYS`).
 - The browser attaches the cookie automatically to later requests.
 - `POST /auth/logout` clears the cookie.
+- Authenticated state-changing requests require a signed CSRF token in both the `csrfToken` cookie and `X-CSRF-Token` header. Obtain the value from `GET /auth/csrf`; the frontend Axios client does this automatically. Registration and login do not require a CSRF token. Logout requires one when an auth cookie is present.
 - Protected endpoints return `401` if the cookie is missing, expired, tampered with, or belongs to a deleted account.
 - The user is reloaded from the database on every protected request, so role changes and account deletion take effect immediately.
 
@@ -76,6 +77,7 @@ Returned by auth endpoints. The password and hash are **never** returned.
 | `email` | string | Stored lowercase |
 | `role` | string | `"user"` or `"admin"` |
 | `bio` | string | Up to 300 chars, empty by default |
+| `profilePictureUrl` | string or `null` | Optional HTTP(S) URL; uploads are not implemented |
 | `createdAt`, `updatedAt` | string | ISO 8601 timestamps |
 
 ---
@@ -181,6 +183,81 @@ Returns the currently logged-in user. Use this when the app loads to restore the
 { "message": "Not authenticated" }
 ```
 
+### 5.6 `GET /auth/csrf`
+
+Requires authentication. Returns the signed CSRF cookie value for clients that need to make authenticated state-changing requests.
+
+**200 OK**
+```json
+{ "csrfToken": "<signed-token>" }
+```
+
+Send the returned value in the `X-CSRF-Token` header. A missing, mismatched, or invalid token receives `403 Invalid CSRF token`.
+
+### 5.7 `GET /users/me`
+
+Requires authentication through the HTTP-only `token` cookie. Returns the current account profile; the user ID comes from the verified session, not request data. The response omits the password and password hash.
+
+**200 OK**
+```json
+{
+  "user": {
+    "_id": "674f1c2a9d3b4a0012a3b4c5",
+    "username": "navya_1",
+    "email": "navya@example.com",
+    "role": "user",
+    "bio": "Cybersecurity student",
+    "profilePictureUrl": null
+  }
+}
+```
+
+**401 Unauthorized:** missing or invalid authentication cookie. **404 Not Found:** the account no longer exists.
+
+### 5.8 `PATCH /users/me`
+
+Requires authentication and a valid CSRF token. Only `username` and `bio` can be updated. At least one field is required. Email, password, role, profile picture URL, IDs, and all other fields are rejected with `400`; they are never applied.
+
+**Request body**
+```json
+{ "username": "navya_cyber", "bio": "Cybersecurity student" }
+```
+
+Username must be 3-30 letters, numbers, or underscores. It is stored lowercase. Bio must be a string of at most 300 characters.
+
+**200 OK** (response uses the authenticated profile shape from `GET /users/me`)
+```json
+{
+  "user": {
+    "_id": "674f1c2a9d3b4a0012a3b4c5",
+    "username": "navya_cyber",
+    "email": "navya@example.com",
+    "role": "user",
+    "bio": "Cybersecurity student",
+    "profilePictureUrl": null
+  }
+}
+```
+
+**Errors:** `400 Validation failed` for invalid fields or protected fields; `401 Not authenticated`; `403 Invalid CSRF token`; `404 User not found`; `409 Username is already in use`.
+
+### 5.9 `GET /users/:username`
+
+Public endpoint; authentication is not required. Returns only username, bio, and profile picture URL. Email, role, account ID, password, and other account data are excluded.
+
+**200 OK**
+```json
+{
+  "user": {
+    "username": "navya_cyber",
+    "bio": "Cybersecurity student",
+    "profilePictureUrl": null
+  }
+}
+```
+
+**400 Bad Request:** invalid username format. **404 Not Found:** no user has that username.
+
 ---
 
 ## 6. Errors
@@ -204,10 +281,11 @@ All errors are JSON with a `message` field.
 
 ## 7. Limits and security behaviour
 
-- **Rate limit:** `POST /auth/register` and `POST /auth/login` share one limit of **20 requests per 15 minutes per IP address**. Every request counts, including failed ones. The 21st returns `429` with a `Retry-After` header. `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset` headers are included on these responses. `GET /auth/me` and `POST /auth/logout` are not limited.
+- **Rate limit:** `POST /auth/register` and `POST /auth/login` share one limit of **20 requests per 15 minutes per IP address**. Every request counts, including failed ones. The 21st returns `429` with a `Retry-After` header. `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset` headers are included on these responses. Normal authenticated requests are not rate limited by this auth limiter.
 - **Body size:** JSON bodies larger than 10 kb are rejected with `413`.
 - **Passwords** are hashed with bcrypt and never returned.
 - **Mass assignment:** only `username`, `email` and `password` are read from the register body. Any `role` value is ignored, and new accounts are always `user`.
+- **Administrator provisioning:** there is no public admin registration endpoint. An operator can promote an existing account with `ENABLE_ADMIN_PROVISIONING=true`, `ADMIN_EMAIL=<existing-account-email>`, and `npm run provision-admin` from `backend`; disable the flag after use.
 - **Injection:** non-string values (for example `{"$ne": null}`) in `email` or `password` are rejected with `400`.
 - **Security headers** are set by Helmet. CORS allows only `CLIENT_URL`, with credentials.
 
@@ -238,7 +316,8 @@ Run the backend (`npm run dev` in `backend`), then in another terminal:
 $body = @{ username = "testuser"; email = "test@example.com"; password = "correct-horse-1" } | ConvertTo-Json
 Invoke-RestMethod -Uri http://localhost:5000/api/auth/register -Method Post -ContentType "application/json" -Body $body -SessionVariable s
 Invoke-RestMethod -Uri http://localhost:5000/api/auth/me -WebSession $s
-Invoke-RestMethod -Uri http://localhost:5000/api/auth/logout -Method Post -WebSession $s
+$csrf = Invoke-RestMethod -Uri http://localhost:5000/api/auth/csrf -WebSession $s
+Invoke-RestMethod -Uri http://localhost:5000/api/auth/logout -Method Post -WebSession $s -Headers @{ "X-CSRF-Token" = $csrf.csrfToken }
 Invoke-RestMethod -Uri http://localhost:5000/api/auth/me -WebSession $s   # 401 expected
 ```
 

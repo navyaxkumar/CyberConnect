@@ -1,4 +1,4 @@
-import { setAuthCookie, clearAuthCookie } from "../utils/generateToken.js";
+import { setAuthCookie, clearAuthCookie, CSRF_COOKIE_NAME } from "../utils/generateToken.js";
 import { registerUser, loginUser } from "../services/authService.js";
 
 export const register = async (req, res) => {
@@ -22,4 +22,8 @@ export const logout = (req, res) => {
 
 export const me = (req, res) => {
   res.json({ user: req.user });
+};
+
+export const csrf = (req, res) => {
+  res.json({ csrfToken: req.cookies[CSRF_COOKIE_NAME] });
 };

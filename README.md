@@ -4,7 +4,7 @@ CyberConnect is a cybersecurity blogging and community platform that brings toge
 
 ## Project Status
 
-Development is planned around a modular Full-Stack architecture and has not yet been completed. The initial scope covers user authentication, article publishing, Markdown editing, image uploads, community interactions, content discovery, and administrative moderation.
+Development is planned around a modular Full-Stack architecture. The authentication backend is implemented; article publishing, Markdown editing, image uploads, community interactions, content discovery, and administrative moderation remain planned.
 
 Secure authentication, role-based authorization, content management, and database-backed community features will be implemented progressively across the phases listed under Development Scope.
 
@@ -99,7 +99,7 @@ Example variables (names may change during implementation):
 PORT
 MONGODB_URI
 JWT_SECRET
-JWT_EXPIRES_IN
+JWT_EXPIRES_DAYS
 CLIENT_URL
 CLOUDINARY_CLOUD_NAME
 CLOUDINARY_API_KEY
@@ -135,20 +135,25 @@ GET /api/health
 Authentication uses JSON Web Tokens (JWT).
 
 - Passwords are hashed with bcrypt before storage and never returned.
-- Protected endpoints require a valid bearer token.
+- Protected endpoints use a JWT in the HTTP-only `token` cookie; browser code must never read or store the JWT.
 - Role-based access control distinguishes regular users and administrators.
 - Users may only modify or delete their own articles.
 - Administrative operations require the Admin role.
 - Ownership is verified on the server and never trusted from client requests.
-- Logout is handled client-side by discarding the token.
+- Logout clears the authentication and CSRF cookies.
+- Authenticated state-changing requests use a signed double-submit CSRF token. The frontend obtains it from `GET /api/auth/csrf` and sends it as `X-CSRF-Token`; its Axios client handles this automatically. Login and registration are exempt; authenticated logout requires the token.
 
 Primary auth endpoints:
 
 ```text
 POST /api/auth/register
 POST /api/auth/login
+POST /api/auth/logout
 GET  /api/auth/me
+GET  /api/auth/csrf
 ```
+
+Public registration always creates a regular user. To promote an existing account, set `ENABLE_ADMIN_PROVISIONING=true` and `ADMIN_EMAIL` in the backend environment, then run `npm run provision-admin` from `backend`. The command requires the configured MongoDB URI, fails unless the account already exists, and should be run as a controlled operator action; unset the flag afterward. No admin credentials are created by the application.
 
 ## API Groups
 
@@ -182,9 +187,9 @@ POST /api/posts/:id/bookmark
 
 ### User Profiles
 ```text
-GET /api/users/:username
-PUT /api/users/profile
-GET /api/users/:username/posts
+GET   /api/users/me
+PATCH /api/users/me
+GET   /api/users/:username
 ```
 
 ### Administration

@@ -6,4 +6,17 @@ const api = axios.create({
   withCredentials: true,
 });
 
+const safeMethods = new Set(["get", "head", "options"]);
+const csrfExemptPaths = new Set(["/auth/register", "/auth/login"]);
+
+api.interceptors.request.use(async (config) => {
+  const method = (config.method || "get").toLowerCase();
+  const path = config.url?.split("?")[0];
+  if (safeMethods.has(method) || csrfExemptPaths.has(path)) return config;
+
+  const { data } = await axios.get(`${api.defaults.baseURL}/auth/csrf`, { withCredentials: true });
+  config.headers.set("X-CSRF-Token", data.csrfToken);
+  return config;
+});
+
 export default api;

@@ -5,8 +5,10 @@ import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import healthRoutes from "./routes/healthRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
 import { notFound, errorHandler } from "./middleware/errorHandler.js";
 import { AppError } from "./middleware/appError.js";
+import { csrfProtection } from "./middleware/csrfMiddleware.js";
 
 const app = express();
 
@@ -27,9 +29,11 @@ app.use(cors({
 }));
 app.use(express.json({ limit: "10kb" }));
 app.use(cookieParser());
+app.use(csrfProtection);
 
 app.use("/api/health", healthRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
